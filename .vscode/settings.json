@@ -1,6 +1,34 @@
 {
   "editor.formatOnSave": true,
   "[cpp]": {
-    "editor.defaultFormatter": "xaver.clang-format"
+    "editor.defaultFormatter": "xaver.clang-format",
+  },
+  "files.associations": {
+    "**/include/**/*.h": "cpp",
+    "optional": "cpp",
+    "tuple": "cpp",
+    "__verbose_abort": "cpp",
+    "cmath": "cpp",
+    "cstddef": "cpp",
+    "cstdint": "cpp",
+    "cstdio": "cpp",
+    "cstdlib": "cpp",
+    "cstring": "cpp",
+    "cwchar": "cpp",
+    "cwctype": "cpp",
+    "execution": "cpp",
+    "memory": "cpp",
+    "initializer_list": "cpp",
+    "iosfwd": "cpp",
+    "limits": "cpp",
+    "new": "cpp",
+    "stdexcept": "cpp",
+    "string": "cpp",
+    "string_view": "cpp",
+    "typeinfo": "cpp",
+    "variant": "cpp",
+    "algorithm": "cpp",
+    "vector": "cpp",
+    "istream": "cpp"
   }
 }

@@ -1,9 +1,9 @@
 
 #include <print>
 
-int main() {
+int main()
+{
+    std::println("hello foo");
 
-  std::println("hello foo");
-
-  return 0;
+    return 0;
 }

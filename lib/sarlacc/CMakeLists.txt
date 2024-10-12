@@ -6,7 +6,9 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_library(Sarlacc SHARED 
-    Foo.cpp
+    Error.cpp
+    Parsing.cpp
+    Path.cpp
 )
 
 target_link_libraries(Sarlacc Metal)
