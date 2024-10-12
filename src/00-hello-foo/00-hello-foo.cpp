@@ -1,4 +1,9 @@
 
-#include "Foo.h"
+#include <print>
 
-int main() { return 0; }
+int main() {
+
+  std::println("hello world");
+
+  return 0;
+}

@@ -1,0 +1,13 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "run",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/src/00-hello-foo",
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
