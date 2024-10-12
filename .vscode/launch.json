@@ -5,7 +5,7 @@
             "name": "run",
             "type": "lldb",
             "request": "launch",
-            "program": "${workspaceFolder}/build/src/00-hello-foo",
+            "program": "${workspaceFolder}/build/src/01-paths",
             "args": [],
             "cwd": "${workspaceFolder}"
         }

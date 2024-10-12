@@ -3,7 +3,7 @@
 
 int main() {
 
-  std::println("hello world");
+  std::println("hello foo");
 
   return 0;
 }
