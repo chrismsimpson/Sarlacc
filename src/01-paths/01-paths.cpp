@@ -1,11 +1,18 @@
 
 #include <print>
+#include <utility>
 
 #include "Path.h"
 
 int main()
 {
     const auto& path = "M 100 100 L 300 100 L 200 300 z";
+
+    ///
+
+    const auto& start = std::chrono::steady_clock::now();
+
+    ///
 
     const auto p = PathParser::parsePathFromSource(path);
 
@@ -101,6 +108,30 @@ int main()
             }
         }
     }
+
+    ///
+
+    const auto& stop = std::chrono::steady_clock::now();
+
+    const auto& duration = stop - start;
+
+    const auto& durationNano = std::chrono::duration_cast<std::chrono::nanoseconds>(duration).count();
+
+    const auto& durationMicro = std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
+
+    const auto& durationMilli = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+
+    const auto& durationSec = std::chrono::duration_cast<std::chrono::seconds>(duration).count();
+
+    ///
+
+    std::println("Duration: {} ns", durationNano);
+
+    std::println("Duration: {} us", durationMicro);
+
+    std::println("Duration: {} ms", durationMilli);
+
+    std::println("Duration: {} s", durationSec);
 
     return 0;
 }
