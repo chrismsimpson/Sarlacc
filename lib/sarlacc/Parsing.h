@@ -301,13 +301,13 @@ public:
 
     ///
 
-    const std::optional<std::unique_ptr<T>> peek() const
+    const std::optional<std::reference_wrapper<const T>> peek() const
     {
         if (isEof()) {
             return std::nullopt;
         }
 
-        return tokens().at(m_position);
+        return std::cref(*tokens().at(m_position));
     }
 
 private:

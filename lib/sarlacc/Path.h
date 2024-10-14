@@ -10,6 +10,8 @@
 #include "Parsing.h"
 #include "SourceLocation.h"
 
+// path tokens
+
 enum class PathTokenType {
     Command,
     Number,
@@ -238,6 +240,8 @@ private:
 
 ///
 
+// path lexing
+
 class PathLexer final {
 public:
     static const std::tuple<std::vector<std::unique_ptr<PathToken>>, std::optional<Error>> lexFromSource(
@@ -255,4 +259,120 @@ private:
 
     static const std::tuple<std::unique_ptr<PathToken>, std::optional<Error>> lexToken(
         Lexer<PathToken>& lexer);
+};
+
+///
+
+// path types
+
+struct PathNumber {
+    float value;
+    std::string source;
+};
+
+struct PathPoint {
+    PathNumber x;
+    PathNumber y;
+};
+
+enum class PathCommandPosition {
+    Absolute,
+    Relative,
+};
+
+enum class PathCommandType {
+    MoveTo,
+    LineTo,
+    HorizontalLineTo,
+    VerticalLineTo,
+    ClosePath,
+    CurveTo,
+    SmoothCurveTo,
+    QuadraticBezierCurveTo,
+    SmoothQuadraticBezierCurveTo,
+    EllipticalArc,
+};
+
+struct PathCommand {
+    PathCommandType type;
+    PathCommandPosition position;
+    std::optional<std::vector<PathPoint>> points;
+    std::optional<std::vector<PathNumber>> numbers;
+    std::optional<std::vector<std::tuple<PathPoint, PathNumber, PathPoint, PathPoint>>> arcs;
+};
+
+///
+
+// path parsing
+
+class PathParser final {
+
+public:
+    static const std::tuple<std::optional<std::vector<std::vector<PathCommand>>>, std::optional<Error>> parsePathFromSource(
+        const std::string& source);
+
+private:
+    static const std::tuple<std::optional<PathPoint>, std::optional<Error>> parsePoint(
+        Parser<PathToken>& parser);
+
+    static const std::tuple<std::optional<std::vector<PathPoint>>, std::optional<Error>> parsePoints(
+        Parser<PathToken>& parser);
+
+    static const std::tuple<std::optional<PathNumber>, std::optional<Error>> parseNumber(
+        Parser<PathToken>& parser);
+
+    static const std::tuple<std::optional<std::vector<PathNumber>>, std::optional<Error>> parseNumbers(
+        Parser<PathToken>& parser);
+
+    static const std::tuple<std::optional<PathCommand>, std::optional<Error>> parseCommandMoveTo(
+        const PathCommandToken& command,
+        Parser<PathToken>& parser);
+
+    static const std::tuple<std::optional<PathCommand>, std::optional<Error>> parseCommandLineTo(
+        const PathCommandToken& command,
+        Parser<PathToken>& parser);
+
+    static const std::tuple<std::optional<PathCommand>, std::optional<Error>> parseCommandHLineTo(
+        const PathCommandToken& command,
+        Parser<PathToken>& parser);
+
+    static const std::tuple<std::optional<PathCommand>, std::optional<Error>> parseCommandVLineTo(
+        const PathCommandToken& command,
+        Parser<PathToken>& parser);
+
+    static const std::tuple<std::optional<PathCommand>, std::optional<Error>> parseCommandCurveTo(
+        const PathCommandToken& command,
+        Parser<PathToken>& parser);
+
+    static const std::tuple<std::optional<PathCommand>, std::optional<Error>> parseCommandSmoothCurveTo(
+        const PathCommandToken& command,
+        Parser<PathToken>& parser);
+
+    static const std::tuple<std::optional<PathCommand>, std::optional<Error>> parseCommandQuadraticBezierCurveTo(
+        const PathCommandToken& command,
+        Parser<PathToken>& parser);
+
+    static const std::tuple<std::optional<PathCommand>, std::optional<Error>> parseCommandSmoothQuadraticBezierCurveTo(
+        const PathCommandToken& command,
+        Parser<PathToken>& parser);
+
+    static const std::tuple<std::optional<std::tuple<PathPoint, PathNumber, PathPoint, PathPoint>>, std::optional<Error>> parseEllipticalArc(
+        Parser<PathToken>& parser);
+
+    static const std::tuple<std::optional<PathCommand>, std::optional<Error>> parseCommandEllipticalArc(
+        const PathCommandToken& command,
+        Parser<PathToken>& parser);
+
+    static const std::tuple<std::optional<PathCommand>, std::optional<Error>> parseCommandClosePath(
+        const PathCommandToken& command,
+        Parser<PathToken>& parser);
+
+    static const std::tuple<std::optional<PathCommand>, std::optional<Error>> parseCommand(
+        Parser<PathToken>& parser);
+
+    static const std::tuple<std::optional<std::vector<PathCommand>>, std::optional<Error>> parseSubPath(
+        Parser<PathToken>& parser);
+
+    static const std::tuple<std::optional<std::vector<std::vector<PathCommand>>>, std::optional<Error>> parseSubPaths(
+        Parser<PathToken>& parser);
 };

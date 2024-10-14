@@ -7,66 +7,98 @@ int main()
 {
     const auto& path = "M 100 100 L 300 100 L 200 300 z";
 
-    const auto lexedTuple = PathLexer::lexFromSource(path);
+    const auto p = PathParser::parsePathFromSource(path);
 
-    const auto& lexedTokens = std::get<std::vector<std::unique_ptr<PathToken>>>(lexedTuple);
+    const auto& parsedCommands = std::get<std::optional<std::vector<std::vector<PathCommand>>>>(p);
 
-    const auto& lexError = std::get<std::optional<Error>>(lexedTuple);
+    const auto& parsedError = std::get<std::optional<Error>>(p);
 
-    if (lexError.has_value()) {
-        std::println("error");
+    if (parsedError.has_value()) {
+
+        if (parsedError.value().message().has_value()) {
+
+            std::println("error: {}", parsedError.value().message().value());
+        }
 
         return 1;
     }
 
-    for (const auto& token : lexedTokens) {
+    for (const auto& commands : parsedCommands.value()) {
 
-        switch (token->type()) {
+        for (const auto& command : commands) {
 
-        case PathTokenType::Command: {
+            switch (command.type) {
 
-            const auto& commandToken = static_cast<PathCommandToken&>(*token);
+            case PathCommandType::MoveTo: {
 
-            std::println("command: {}", commandToken.value());
+                std::println("move to");
 
-            break;
-        }
+                break;
+            }
 
-        case PathTokenType::Number: {
+            case PathCommandType::LineTo: {
 
-            const auto& numberToken = static_cast<PathNumberToken&>(*token);
+                std::println("line to");
 
-            std::println("number: {}", numberToken.value());
+                break;
+            }
 
-            break;
-        }
+            case PathCommandType::HorizontalLineTo: {
 
-        case PathTokenType::Punc: {
+                std::println("h line to");
 
-            const auto& puncToken = static_cast<PathPuncToken&>(*token);
+                break;
+            }
 
-            std::println("punc: {}", puncToken.value());
+            case PathCommandType::VerticalLineTo: {
 
-            break;
-        }
+                std::println("v line to");
 
-        case PathTokenType::Unknown: {
+                break;
+            }
 
-            const auto& unknownToken = static_cast<PathUnknownToken&>(*token);
+            case PathCommandType::CurveTo: {
 
-            unknownToken.value().has_value()
-                ? std::println("unknown: {}", unknownToken.value().value())
-                : std::println("unknown (no value)");
+                std::println("curve to");
 
-            break;
-        }
+                break;
+            }
 
-        case PathTokenType::Eof: {
+            case PathCommandType::SmoothCurveTo: {
 
-            std::println("eof");
+                std::println("smooth curve to");
 
-            break;
-        }
+                break;
+            }
+
+            case PathCommandType::QuadraticBezierCurveTo: {
+
+                std::println("quadratic bezier curve to");
+
+                break;
+            }
+
+            case PathCommandType::SmoothQuadraticBezierCurveTo: {
+
+                std::println("smooth quadratic bezier curve to");
+
+                break;
+            }
+
+            case PathCommandType::EllipticalArc: {
+
+                std::println("elliptical arc");
+
+                break;
+            }
+
+            case PathCommandType::ClosePath: {
+
+                std::println("close path");
+
+                break;
+            }
+            }
         }
     }
 
