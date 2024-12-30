@@ -27,7 +27,7 @@
 
 #include <simd/simd.h>
 
-static constexpr size_t kNumInstances = 32;
+static constexpr size_t NUM_INSTANCES = 32;
 static constexpr size_t MAX_FRAMES_IN_FLIGHT = 3;
 
 #pragma region Declarations {
@@ -359,7 +359,7 @@ void Renderer::buildBuffers()
     m_vertexDataBuffer->didModifyRange(NS::Range::Make(0, m_vertexDataBuffer->length()));
     m_indexBuffer->didModifyRange(NS::Range::Make(0, m_indexBuffer->length()));
 
-    const size_t instanceDataSize = MAX_FRAMES_IN_FLIGHT * kNumInstances * sizeof(shader_types::InstanceData);
+    const size_t instanceDataSize = MAX_FRAMES_IN_FLIGHT * NUM_INSTANCES * sizeof(shader_types::InstanceData);
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
         m_instanceDataBuffer[i] = m_device->newBuffer(instanceDataSize, MTL::ResourceStorageModeManaged);
     }
@@ -386,9 +386,9 @@ void Renderer::draw(MTK::View* view)
 
     const float scl = 0.1f;
     shader_types::InstanceData* pInstanceData = reinterpret_cast<shader_types::InstanceData*>(pInstanceDataBuffer->contents());
-    for (size_t i = 0; i < kNumInstances; ++i) {
-        float iDivNumInstances = i / (float)kNumInstances;
-        float xoff = (iDivNumInstances * 2.0f - 1.0f) + (1.f / kNumInstances);
+    for (size_t i = 0; i < NUM_INSTANCES; ++i) {
+        float iDivNumInstances = i / (float)NUM_INSTANCES;
+        float xoff = (iDivNumInstances * 2.0f - 1.0f) + (1.f / NUM_INSTANCES);
         float yoff = sin((iDivNumInstances + m_angle) * 2.0f * M_PI);
         pInstanceData[i].instanceTransform = (float4x4) { (float4) { scl * sinf(m_angle), scl * cosf(m_angle), 0.f, 0.f },
             (float4) { scl * cosf(m_angle), scl * -sinf(m_angle), 0.f, 0.f },
@@ -416,7 +416,7 @@ void Renderer::draw(MTK::View* view)
         6, MTL::IndexType::IndexTypeUInt16,
         m_indexBuffer,
         0,
-        kNumInstances);
+        NUM_INSTANCES);
 
     renderCommandEncoder->endEncoding();
     commandBuffer->presentDrawable(view->currentDrawable());

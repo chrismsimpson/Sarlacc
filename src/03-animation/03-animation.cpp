@@ -43,10 +43,10 @@ private:
     MTL::CommandQueue* m_commandQueue;
     MTL::Library* m_shaderLibrary;
     MTL::RenderPipelineState* m_renderPipelineState;
-    MTL::Buffer* _pArgBuffer;
+    MTL::Buffer* m_argBuffer;
     MTL::Buffer* m_vertexPositionsBuffer;
     MTL::Buffer* m_vertexColorsBuffer;
-    MTL::Buffer* _pFrameData[3];
+    MTL::Buffer* m_frameData[3];
     float m_angle;
     int m_frame;
     dispatch_semaphore_t m_semaphore;
@@ -235,11 +235,11 @@ Renderer::Renderer(MTL::Device* device)
 Renderer::~Renderer()
 {
     m_shaderLibrary->release();
-    _pArgBuffer->release();
+    m_argBuffer->release();
     m_vertexPositionsBuffer->release();
     m_vertexColorsBuffer->release();
     for (int i = 0; i < Renderer::MAX_FRAMES_IN_FLIGHT; ++i) {
-        _pFrameData[i]->release();
+        m_frameData[i]->release();
     }
     m_renderPipelineState->release();
     m_commandQueue->release();
@@ -352,14 +352,14 @@ void Renderer::buildBuffers()
     MTL::ArgumentEncoder* pArgEncoder = pVertexFn->newArgumentEncoder(0);
 
     MTL::Buffer* pArgBuffer = m_device->newBuffer(pArgEncoder->encodedLength(), MTL::ResourceStorageModeManaged);
-    _pArgBuffer = pArgBuffer;
+    m_argBuffer = pArgBuffer;
 
-    pArgEncoder->setArgumentBuffer(_pArgBuffer, 0);
+    pArgEncoder->setArgumentBuffer(m_argBuffer, 0);
 
     pArgEncoder->setBuffer(m_vertexPositionsBuffer, 0, 0);
     pArgEncoder->setBuffer(m_vertexColorsBuffer, 0, 1);
 
-    _pArgBuffer->didModifyRange(NS::Range::Make(0, _pArgBuffer->length()));
+    m_argBuffer->didModifyRange(NS::Range::Make(0, m_argBuffer->length()));
 
     pVertexFn->release();
     pArgEncoder->release();
@@ -372,7 +372,7 @@ struct FrameData {
 void Renderer::buildFrameData()
 {
     for (int i = 0; i < Renderer::MAX_FRAMES_IN_FLIGHT; ++i) {
-        _pFrameData[i] = m_device->newBuffer(sizeof(FrameData), MTL::ResourceStorageModeManaged);
+        m_frameData[i] = m_device->newBuffer(sizeof(FrameData), MTL::ResourceStorageModeManaged);
     }
 }
 
@@ -381,7 +381,7 @@ void Renderer::draw(MTK::View* view)
     NS::AutoreleasePool* pPool = NS::AutoreleasePool::alloc()->init();
 
     m_frame = (m_frame + 1) % Renderer::MAX_FRAMES_IN_FLIGHT;
-    MTL::Buffer* frameDataBuffer = _pFrameData[m_frame];
+    MTL::Buffer* frameDataBuffer = m_frameData[m_frame];
 
     MTL::CommandBuffer* commandBuffer = m_commandQueue->commandBuffer();
     dispatch_semaphore_wait(m_semaphore, DISPATCH_TIME_FOREVER);
@@ -397,7 +397,7 @@ void Renderer::draw(MTK::View* view)
     MTL::RenderCommandEncoder* renderCommandEncoder = commandBuffer->renderCommandEncoder(pRpd);
 
     renderCommandEncoder->setRenderPipelineState(m_renderPipelineState);
-    renderCommandEncoder->setVertexBuffer(_pArgBuffer, 0, 0);
+    renderCommandEncoder->setVertexBuffer(m_argBuffer, 0, 0);
     renderCommandEncoder->useResource(m_vertexPositionsBuffer, MTL::ResourceUsageRead);
     renderCommandEncoder->useResource(m_vertexColorsBuffer, MTL::ResourceUsageRead);
 

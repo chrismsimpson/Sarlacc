@@ -42,7 +42,7 @@ private:
     MTL::CommandQueue* m_commandQueue;
     MTL::Library* m_shaderLibrary;
     MTL::RenderPipelineState* m_renderPipelineState;
-    MTL::Buffer* _pArgBuffer;
+    MTL::Buffer* m_argBuffer;
     MTL::Buffer* m_vertexPositionsBuffer;
     MTL::Buffer* m_vertexColorsBuffer;
 };
@@ -222,7 +222,7 @@ Renderer::Renderer(MTL::Device* device)
 Renderer::~Renderer()
 {
     m_shaderLibrary->release();
-    _pArgBuffer->release();
+    m_argBuffer->release();
     m_vertexPositionsBuffer->release();
     m_vertexColorsBuffer->release();
     m_renderPipelineState->release();
@@ -329,14 +329,14 @@ void Renderer::buildBuffers()
     MTL::ArgumentEncoder* pArgEncoder = pVertexFn->newArgumentEncoder(0);
 
     MTL::Buffer* pArgBuffer = m_device->newBuffer(pArgEncoder->encodedLength(), MTL::ResourceStorageModeManaged);
-    _pArgBuffer = pArgBuffer;
+    m_argBuffer = pArgBuffer;
 
-    pArgEncoder->setArgumentBuffer(_pArgBuffer, 0);
+    pArgEncoder->setArgumentBuffer(m_argBuffer, 0);
 
     pArgEncoder->setBuffer(m_vertexPositionsBuffer, 0, 0);
     pArgEncoder->setBuffer(m_vertexColorsBuffer, 0, 1);
 
-    _pArgBuffer->didModifyRange(NS::Range::Make(0, _pArgBuffer->length()));
+    m_argBuffer->didModifyRange(NS::Range::Make(0, m_argBuffer->length()));
 
     pVertexFn->release();
     pArgEncoder->release();
@@ -351,7 +351,7 @@ void Renderer::draw(MTK::View* view)
     MTL::RenderCommandEncoder* renderCommandEncoder = commandBuffer->renderCommandEncoder(pRpd);
 
     renderCommandEncoder->setRenderPipelineState(m_renderPipelineState);
-    renderCommandEncoder->setVertexBuffer(_pArgBuffer, 0, 0);
+    renderCommandEncoder->setVertexBuffer(m_argBuffer, 0, 0);
     renderCommandEncoder->useResource(m_vertexPositionsBuffer, MTL::ResourceUsageRead);
     renderCommandEncoder->useResource(m_vertexColorsBuffer, MTL::ResourceUsageRead);
     renderCommandEncoder->drawPrimitives(MTL::PrimitiveType::PrimitiveTypeTriangle, NS::UInteger(0), NS::UInteger(3));

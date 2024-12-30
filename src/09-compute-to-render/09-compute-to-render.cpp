@@ -27,10 +27,10 @@
 
 #include <simd/simd.h>
 
-static constexpr size_t kInstanceRows = 10;
-static constexpr size_t kInstanceColumns = 10;
-static constexpr size_t kInstanceDepth = 10;
-static constexpr size_t kNumInstances = (kInstanceRows * kInstanceColumns * kInstanceDepth);
+static constexpr size_t INSTANCE_ROWS = 10;
+static constexpr size_t INSTANCE_COLUMNS = 10;
+static constexpr size_t INSTANCE_DEPTH = 10;
+static constexpr size_t NUM_INSTANCES = (INSTANCE_ROWS * INSTANCE_COLUMNS * INSTANCE_DEPTH);
 static constexpr size_t MAX_FRAMES_IN_FLIGHT = 3;
 static constexpr uint32_t kTextureWidth = 128;
 static constexpr uint32_t kTextureHeight = 128;
@@ -78,7 +78,7 @@ private:
     int m_frame;
     dispatch_semaphore_t m_semaphore;
     static const int MAX_FRAMES_IN_FLIGHT;
-    uint _animationIndex;
+    uint m_animationIndex;
 };
 
 class MyMTKViewDelegate : public MTK::ViewDelegate {
@@ -338,7 +338,7 @@ Renderer::Renderer(MTL::Device* device)
     : m_device(device->retain())
     , m_angle(0.f)
     , m_frame(0)
-    , _animationIndex(0)
+    , m_animationIndex(0)
 {
     m_commandQueue = m_device->newCommandQueue();
     buildShaders();
@@ -653,7 +653,7 @@ void Renderer::buildBuffers()
     m_vertexDataBuffer->didModifyRange(NS::Range::Make(0, m_vertexDataBuffer->length()));
     m_indexBuffer->didModifyRange(NS::Range::Make(0, m_indexBuffer->length()));
 
-    const size_t instanceDataSize = MAX_FRAMES_IN_FLIGHT * kNumInstances * sizeof(shader_types::InstanceData);
+    const size_t instanceDataSize = MAX_FRAMES_IN_FLIGHT * NUM_INSTANCES * sizeof(shader_types::InstanceData);
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
         m_instanceDataBuffer[i] = m_device->newBuffer(instanceDataSize, MTL::ResourceStorageModeManaged);
     }
@@ -671,7 +671,7 @@ void Renderer::generateMandelbrotTexture(MTL::CommandBuffer* pCommandBuffer)
     assert(pCommandBuffer);
 
     uint* ptr = reinterpret_cast<uint*>(m_textureAnimationBuffer->contents());
-    *ptr = (_animationIndex++) % 5000;
+    *ptr = (m_animationIndex++) % 5000;
     m_textureAnimationBuffer->didModifyRange(NS::Range::Make(0, sizeof(uint)));
 
     MTL::ComputeCommandEncoder* pComputeEncoder = pCommandBuffer->computeCommandEncoder();
@@ -724,12 +724,12 @@ void Renderer::draw(MTK::View* view)
     size_t ix = 0;
     size_t iy = 0;
     size_t iz = 0;
-    for (size_t i = 0; i < kNumInstances; ++i) {
-        if (ix == kInstanceRows) {
+    for (size_t i = 0; i < NUM_INSTANCES; ++i) {
+        if (ix == INSTANCE_ROWS) {
             ix = 0;
             iy += 1;
         }
-        if (iy == kInstanceRows) {
+        if (iy == INSTANCE_ROWS) {
             iy = 0;
             iz += 1;
         }
@@ -738,15 +738,15 @@ void Renderer::draw(MTK::View* view)
         float4x4 zrot = math::makeZRotate(m_angle * sinf((float)ix));
         float4x4 yrot = math::makeYRotate(m_angle * cosf((float)iy));
 
-        float x = ((float)ix - (float)kInstanceRows / 2.f) * (2.f * scl) + scl;
-        float y = ((float)iy - (float)kInstanceColumns / 2.f) * (2.f * scl) + scl;
-        float z = ((float)iz - (float)kInstanceDepth / 2.f) * (2.f * scl);
+        float x = ((float)ix - (float)INSTANCE_ROWS / 2.f) * (2.f * scl) + scl;
+        float y = ((float)iy - (float)INSTANCE_COLUMNS / 2.f) * (2.f * scl) + scl;
+        float z = ((float)iz - (float)INSTANCE_DEPTH / 2.f) * (2.f * scl);
         float4x4 translate = math::makeTranslate(math::add(objectPosition, { x, y, z }));
 
         pInstanceData[i].instanceTransform = fullObjectRot * translate * yrot * zrot * scale;
         pInstanceData[i].instanceNormalTransform = math::discardTranslation(pInstanceData[i].instanceTransform);
 
-        float iDivNumInstances = i / (float)kNumInstances;
+        float iDivNumInstances = i / (float)NUM_INSTANCES;
         float r = iDivNumInstances;
         float g = 1.0f - r;
         float b = sinf(M_PI * 2.0f * iDivNumInstances);
@@ -790,7 +790,7 @@ void Renderer::draw(MTK::View* view)
         6 * 6, MTL::IndexType::IndexTypeUInt16,
         m_indexBuffer,
         0,
-        kNumInstances);
+        NUM_INSTANCES);
 
     renderCommandEncoder->endEncoding();
     commandBuffer->presentDrawable(view->currentDrawable());
