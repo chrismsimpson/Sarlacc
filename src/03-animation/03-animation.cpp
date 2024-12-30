@@ -297,12 +297,12 @@ void Renderer::buildShaders()
     MTL::Function* pVertexFn = pLibrary->newFunction(NS::String::string("vertexMain", UTF8StringEncoding));
     MTL::Function* pFragFn = pLibrary->newFunction(NS::String::string("fragmentMain", UTF8StringEncoding));
 
-    MTL::RenderPipelineDescriptor* pDesc = MTL::RenderPipelineDescriptor::alloc()->init();
-    pDesc->setVertexFunction(pVertexFn);
-    pDesc->setFragmentFunction(pFragFn);
-    pDesc->colorAttachments()->object(0)->setPixelFormat(MTL::PixelFormat::PixelFormatBGRA8Unorm_sRGB);
+    MTL::RenderPipelineDescriptor* renderPipelineDescriptor = MTL::RenderPipelineDescriptor::alloc()->init();
+    renderPipelineDescriptor->setVertexFunction(pVertexFn);
+    renderPipelineDescriptor->setFragmentFunction(pFragFn);
+    renderPipelineDescriptor->colorAttachments()->object(0)->setPixelFormat(MTL::PixelFormat::PixelFormatBGRA8Unorm_sRGB);
 
-    m_renderPipelineState = m_device->newRenderPipelineState(pDesc, &error);
+    m_renderPipelineState = m_device->newRenderPipelineState(renderPipelineDescriptor, &error);
     if (!m_renderPipelineState) {
         __builtin_printf("%s", error->localizedDescription()->utf8String());
         assert(false);
@@ -310,7 +310,7 @@ void Renderer::buildShaders()
 
     pVertexFn->release();
     pFragFn->release();
-    pDesc->release();
+    renderPipelineDescriptor->release();
     m_shaderLibrary = pLibrary;
 }
 
