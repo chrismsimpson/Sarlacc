@@ -378,7 +378,7 @@ void Renderer::buildFrameData()
 
 void Renderer::draw(MTK::View* view)
 {
-    NS::AutoreleasePool* pPool = NS::AutoreleasePool::alloc()->init();
+    NS::AutoreleasePool* autoreleasePool = NS::AutoreleasePool::alloc()->init();
 
     m_frame = (m_frame + 1) % Renderer::MAX_FRAMES_IN_FLIGHT;
     MTL::Buffer* frameDataBuffer = m_frameData[m_frame];
@@ -408,7 +408,7 @@ void Renderer::draw(MTK::View* view)
     commandBuffer->presentDrawable(view->currentDrawable());
     commandBuffer->commit();
 
-    pPool->release();
+    autoreleasePool->release();
 }
 
 #pragma endregion Renderer }

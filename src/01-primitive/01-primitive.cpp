@@ -317,7 +317,7 @@ void Renderer::buildBuffers()
 
 void Renderer::draw(MTK::View* view)
 {
-    NS::AutoreleasePool* pPool = NS::AutoreleasePool::alloc()->init();
+    NS::AutoreleasePool* autoreleasePool = NS::AutoreleasePool::alloc()->init();
 
     MTL::CommandBuffer* commandBuffer = m_commandQueue->commandBuffer();
     MTL::RenderPassDescriptor* pRpd = view->currentRenderPassDescriptor();
@@ -332,7 +332,7 @@ void Renderer::draw(MTK::View* view)
     commandBuffer->presentDrawable(view->currentDrawable());
     commandBuffer->commit();
 
-    pPool->release();
+    autoreleasePool->release();
 }
 
 #pragma endregion Renderer }

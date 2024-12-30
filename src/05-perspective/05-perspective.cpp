@@ -440,13 +440,13 @@ void Renderer::buildShaders()
 
 void Renderer::buildDepthStencilStates()
 {
-    MTL::DepthStencilDescriptor* pDsDesc = MTL::DepthStencilDescriptor::alloc()->init();
-    pDsDesc->setDepthCompareFunction(MTL::CompareFunction::CompareFunctionLess);
-    pDsDesc->setDepthWriteEnabled(true);
+    MTL::DepthStencilDescriptor* depthStencilDescriptor = MTL::DepthStencilDescriptor::alloc()->init();
+    depthStencilDescriptor->setDepthCompareFunction(MTL::CompareFunction::CompareFunctionLess);
+    depthStencilDescriptor->setDepthWriteEnabled(true);
 
-    m_depthStencilState = m_device->newDepthStencilState(pDsDesc);
+    m_depthStencilState = m_device->newDepthStencilState(depthStencilDescriptor);
 
-    pDsDesc->release();
+    depthStencilDescriptor->release();
 }
 
 void Renderer::buildBuffers()
@@ -489,11 +489,11 @@ void Renderer::buildBuffers()
     const size_t vertexDataSize = sizeof(verts);
     const size_t indexDataSize = sizeof(indices);
 
-    MTL::Buffer* pVertexBuffer = m_device->newBuffer(vertexDataSize, MTL::ResourceStorageModeManaged);
-    MTL::Buffer* pIndexBuffer = m_device->newBuffer(indexDataSize, MTL::ResourceStorageModeManaged);
+    MTL::Buffer* vertexBuffer = m_device->newBuffer(vertexDataSize, MTL::ResourceStorageModeManaged);
+    MTL::Buffer* indexBuffer = m_device->newBuffer(indexDataSize, MTL::ResourceStorageModeManaged);
 
-    m_vertexDataBuffer = pVertexBuffer;
-    m_indexBuffer = pIndexBuffer;
+    m_vertexDataBuffer = vertexBuffer;
+    m_indexBuffer = indexBuffer;
 
     memcpy(m_vertexDataBuffer->contents(), verts, vertexDataSize);
     memcpy(m_indexBuffer->contents(), indices, indexDataSize);
@@ -518,10 +518,10 @@ void Renderer::draw(MTK::View* view)
     using simd::float4;
     using simd::float4x4;
 
-    NS::AutoreleasePool* pPool = NS::AutoreleasePool::alloc()->init();
+    NS::AutoreleasePool* autoreleasePool = NS::AutoreleasePool::alloc()->init();
 
     m_frame = (m_frame + 1) % Renderer::MAX_FRAMES_IN_FLIGHT;
-    MTL::Buffer* pInstanceDataBuffer = m_instanceDataBuffer[m_frame];
+    MTL::Buffer* instanceDataBuffer = m_instanceDataBuffer[m_frame];
 
     MTL::CommandBuffer* commandBuffer = m_commandQueue->commandBuffer();
     dispatch_semaphore_wait(m_semaphore, DISPATCH_TIME_FOREVER);
@@ -533,7 +533,7 @@ void Renderer::draw(MTK::View* view)
     m_angle += 0.01f;
 
     const float scl = 0.1f;
-    shader_types::InstanceData* pInstanceData = reinterpret_cast<shader_types::InstanceData*>(pInstanceDataBuffer->contents());
+    shader_types::InstanceData* pInstanceData = reinterpret_cast<shader_types::InstanceData*>(instanceDataBuffer->contents());
 
     float3 objectPosition = { 0.f, 0.f, -5.f };
 
@@ -562,7 +562,7 @@ void Renderer::draw(MTK::View* view)
         float b = sinf(M_PI * 2.0f * iDivNumInstances);
         pInstanceData[i].instanceColor = (float4) { r, g, b, 1.0f };
     }
-    pInstanceDataBuffer->didModifyRange(NS::Range::Make(0, pInstanceDataBuffer->length()));
+    instanceDataBuffer->didModifyRange(NS::Range::Make(0, instanceDataBuffer->length()));
 
     // Update camera state:
 
@@ -581,7 +581,7 @@ void Renderer::draw(MTK::View* view)
     renderCommandEncoder->setDepthStencilState(m_depthStencilState);
 
     renderCommandEncoder->setVertexBuffer(m_vertexDataBuffer, /* offset */ 0, /* index */ 0);
-    renderCommandEncoder->setVertexBuffer(pInstanceDataBuffer, /* offset */ 0, /* index */ 1);
+    renderCommandEncoder->setVertexBuffer(instanceDataBuffer, /* offset */ 0, /* index */ 1);
     renderCommandEncoder->setVertexBuffer(pCameraDataBuffer, /* offset */ 0, /* index */ 2);
 
     renderCommandEncoder->setCullMode(MTL::CullModeBack);
@@ -597,7 +597,7 @@ void Renderer::draw(MTK::View* view)
     commandBuffer->presentDrawable(view->currentDrawable());
     commandBuffer->commit();
 
-    pPool->release();
+    autoreleasePool->release();
 }
 
 #pragma endregion Renderer }
