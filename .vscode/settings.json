@@ -5,6 +5,7 @@
   },
   "files.associations": {
     "**/include/**/*.h": "cpp",
+    "**/*.hpp": "cpp",
     "optional": "cpp",
     "tuple": "cpp",
     "__verbose_abort": "cpp",

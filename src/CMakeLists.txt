@@ -12,6 +12,7 @@ FOREACH(project ${projects})
 
         # Create executable and link target
         add_executable(${project-name} ${${project}-src})
+
         target_link_libraries(${project-name} Metal Sarlacc)
 
         message(STATUS "Adding ${project-name}")
