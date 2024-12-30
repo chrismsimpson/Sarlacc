@@ -449,12 +449,12 @@ void Renderer::buildShaders()
         assert(false);
     }
 
-    MTL::Function* pVertexFn = library->newFunction(NS::String::string("vertexMain", UTF8StringEncoding));
-    MTL::Function* pFragFn = library->newFunction(NS::String::string("fragmentMain", UTF8StringEncoding));
+    MTL::Function* vertexFunction = library->newFunction(NS::String::string("vertexMain", UTF8StringEncoding));
+    MTL::Function* fragmentFunction = library->newFunction(NS::String::string("fragmentMain", UTF8StringEncoding));
 
     MTL::RenderPipelineDescriptor* renderPipelineDescriptor = MTL::RenderPipelineDescriptor::alloc()->init();
-    renderPipelineDescriptor->setVertexFunction(pVertexFn);
-    renderPipelineDescriptor->setFragmentFunction(pFragFn);
+    renderPipelineDescriptor->setVertexFunction(vertexFunction);
+    renderPipelineDescriptor->setFragmentFunction(fragmentFunction);
     renderPipelineDescriptor->colorAttachments()->object(0)->setPixelFormat(MTL::PixelFormat::PixelFormatBGRA8Unorm_sRGB);
     renderPipelineDescriptor->setDepthAttachmentPixelFormat(MTL::PixelFormat::PixelFormatDepth16Unorm);
 
@@ -464,8 +464,8 @@ void Renderer::buildShaders()
         assert(false);
     }
 
-    pVertexFn->release();
-    pFragFn->release();
+    vertexFunction->release();
+    fragmentFunction->release();
     renderPipelineDescriptor->release();
     m_shaderLibrary = library;
 }

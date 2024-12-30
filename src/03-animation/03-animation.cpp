@@ -294,12 +294,12 @@ void Renderer::buildShaders()
         assert(false);
     }
 
-    MTL::Function* pVertexFn = library->newFunction(NS::String::string("vertexMain", UTF8StringEncoding));
-    MTL::Function* pFragFn = library->newFunction(NS::String::string("fragmentMain", UTF8StringEncoding));
+    MTL::Function* vertexFunction = library->newFunction(NS::String::string("vertexMain", UTF8StringEncoding));
+    MTL::Function* fragmentFunction = library->newFunction(NS::String::string("fragmentMain", UTF8StringEncoding));
 
     MTL::RenderPipelineDescriptor* renderPipelineDescriptor = MTL::RenderPipelineDescriptor::alloc()->init();
-    renderPipelineDescriptor->setVertexFunction(pVertexFn);
-    renderPipelineDescriptor->setFragmentFunction(pFragFn);
+    renderPipelineDescriptor->setVertexFunction(vertexFunction);
+    renderPipelineDescriptor->setFragmentFunction(fragmentFunction);
     renderPipelineDescriptor->colorAttachments()->object(0)->setPixelFormat(MTL::PixelFormat::PixelFormatBGRA8Unorm_sRGB);
 
     m_renderPipelineState = m_device->newRenderPipelineState(renderPipelineDescriptor, &error);
@@ -308,8 +308,8 @@ void Renderer::buildShaders()
         assert(false);
     }
 
-    pVertexFn->release();
-    pFragFn->release();
+    vertexFunction->release();
+    fragmentFunction->release();
     renderPipelineDescriptor->release();
     m_shaderLibrary = library;
 }
@@ -348,8 +348,8 @@ void Renderer::buildBuffers()
     using NS::StringEncoding::UTF8StringEncoding;
     assert(m_shaderLibrary);
 
-    MTL::Function* pVertexFn = m_shaderLibrary->newFunction(NS::String::string("vertexMain", UTF8StringEncoding));
-    MTL::ArgumentEncoder* pArgEncoder = pVertexFn->newArgumentEncoder(0);
+    MTL::Function* vertexFunction = m_shaderLibrary->newFunction(NS::String::string("vertexMain", UTF8StringEncoding));
+    MTL::ArgumentEncoder* pArgEncoder = vertexFunction->newArgumentEncoder(0);
 
     MTL::Buffer* pArgBuffer = m_device->newBuffer(pArgEncoder->encodedLength(), MTL::ResourceStorageModeManaged);
     m_argBuffer = pArgBuffer;
@@ -361,7 +361,7 @@ void Renderer::buildBuffers()
 
     m_argBuffer->didModifyRange(NS::Range::Make(0, m_argBuffer->length()));
 
-    pVertexFn->release();
+    vertexFunction->release();
     pArgEncoder->release();
 }
 
