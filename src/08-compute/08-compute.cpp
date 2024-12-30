@@ -465,14 +465,14 @@ void Renderer::buildShaders()
     )";
 
     NS::Error* error = nullptr;
-    MTL::Library* pLibrary = m_device->newLibrary(NS::String::string(shaderSrc, UTF8StringEncoding), nullptr, &error);
-    if (!pLibrary) {
+    MTL::Library* library = m_device->newLibrary(NS::String::string(shaderSrc, UTF8StringEncoding), nullptr, &error);
+    if (!library) {
         __builtin_printf("%s", error->localizedDescription()->utf8String());
         assert(false);
     }
 
-    MTL::Function* pVertexFn = pLibrary->newFunction(NS::String::string("vertexMain", UTF8StringEncoding));
-    MTL::Function* pFragFn = pLibrary->newFunction(NS::String::string("fragmentMain", UTF8StringEncoding));
+    MTL::Function* pVertexFn = library->newFunction(NS::String::string("vertexMain", UTF8StringEncoding));
+    MTL::Function* pFragFn = library->newFunction(NS::String::string("fragmentMain", UTF8StringEncoding));
 
     MTL::RenderPipelineDescriptor* renderPipelineDescriptor = MTL::RenderPipelineDescriptor::alloc()->init();
     renderPipelineDescriptor->setVertexFunction(pVertexFn);
@@ -489,7 +489,7 @@ void Renderer::buildShaders()
     pVertexFn->release();
     pFragFn->release();
     renderPipelineDescriptor->release();
-    m_shaderLibrary = pLibrary;
+    m_shaderLibrary = library;
 }
 
 void Renderer::buildComputePipeline()
