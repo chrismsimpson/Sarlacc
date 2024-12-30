@@ -464,10 +464,10 @@ void Renderer::buildShaders()
         }
     )";
 
-    NS::Error* pError = nullptr;
-    MTL::Library* pLibrary = m_device->newLibrary(NS::String::string(shaderSrc, UTF8StringEncoding), nullptr, &pError);
+    NS::Error* error = nullptr;
+    MTL::Library* pLibrary = m_device->newLibrary(NS::String::string(shaderSrc, UTF8StringEncoding), nullptr, &error);
     if (!pLibrary) {
-        __builtin_printf("%s", pError->localizedDescription()->utf8String());
+        __builtin_printf("%s", error->localizedDescription()->utf8String());
         assert(false);
     }
 
@@ -480,9 +480,9 @@ void Renderer::buildShaders()
     pDesc->colorAttachments()->object(0)->setPixelFormat(MTL::PixelFormat::PixelFormatBGRA8Unorm_sRGB);
     pDesc->setDepthAttachmentPixelFormat(MTL::PixelFormat::PixelFormatDepth16Unorm);
 
-    m_renderPipelineState = m_device->newRenderPipelineState(pDesc, &pError);
+    m_renderPipelineState = m_device->newRenderPipelineState(pDesc, &error);
     if (!m_renderPipelineState) {
-        __builtin_printf("%s", pError->localizedDescription()->utf8String());
+        __builtin_printf("%s", error->localizedDescription()->utf8String());
         assert(false);
     }
 
@@ -524,18 +524,18 @@ void Renderer::buildComputePipeline()
             half color = (0.5 + 0.5 * cos(3.0 + iteration * 0.15));
             tex.write(half4(color, color, color, 1.0), index, 0);
         })";
-    NS::Error* pError = nullptr;
+    NS::Error* error = nullptr;
 
-    MTL::Library* pComputeLibrary = m_device->newLibrary(NS::String::string(kernelSrc, NS::UTF8StringEncoding), nullptr, &pError);
+    MTL::Library* pComputeLibrary = m_device->newLibrary(NS::String::string(kernelSrc, NS::UTF8StringEncoding), nullptr, &error);
     if (!pComputeLibrary) {
-        __builtin_printf("%s", pError->localizedDescription()->utf8String());
+        __builtin_printf("%s", error->localizedDescription()->utf8String());
         assert(false);
     }
 
     MTL::Function* pMandelbrotFn = pComputeLibrary->newFunction(NS::String::string("mandelbrot_set", NS::UTF8StringEncoding));
-    m_computePipelineState = m_device->newComputePipelineState(pMandelbrotFn, &pError);
+    m_computePipelineState = m_device->newComputePipelineState(pMandelbrotFn, &error);
     if (!m_computePipelineState) {
-        __builtin_printf("%s", pError->localizedDescription()->utf8String());
+        __builtin_printf("%s", error->localizedDescription()->utf8String());
         assert(false);
     }
 

@@ -442,10 +442,10 @@ void Renderer::buildShaders()
         }
     )";
 
-    NS::Error* pError = nullptr;
-    MTL::Library* pLibrary = m_device->newLibrary(NS::String::string(shaderSrc, UTF8StringEncoding), nullptr, &pError);
+    NS::Error* error = nullptr;
+    MTL::Library* pLibrary = m_device->newLibrary(NS::String::string(shaderSrc, UTF8StringEncoding), nullptr, &error);
     if (!pLibrary) {
-        __builtin_printf("%s", pError->localizedDescription()->utf8String());
+        __builtin_printf("%s", error->localizedDescription()->utf8String());
         assert(false);
     }
 
@@ -458,9 +458,9 @@ void Renderer::buildShaders()
     pDesc->colorAttachments()->object(0)->setPixelFormat(MTL::PixelFormat::PixelFormatBGRA8Unorm_sRGB);
     pDesc->setDepthAttachmentPixelFormat(MTL::PixelFormat::PixelFormatDepth16Unorm);
 
-    m_renderPipelineState = m_device->newRenderPipelineState(pDesc, &pError);
+    m_renderPipelineState = m_device->newRenderPipelineState(pDesc, &error);
     if (!m_renderPipelineState) {
-        __builtin_printf("%s", pError->localizedDescription()->utf8String());
+        __builtin_printf("%s", error->localizedDescription()->utf8String());
         assert(false);
     }
 
