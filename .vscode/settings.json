@@ -30,6 +30,8 @@
     "variant": "cpp",
     "algorithm": "cpp",
     "vector": "cpp",
-    "istream": "cpp"
+    "istream": "cpp",
+    "sstream": "cpp",
+    "ios": "cpp"
   }
 }

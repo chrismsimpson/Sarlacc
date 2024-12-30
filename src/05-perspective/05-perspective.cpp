@@ -45,23 +45,23 @@ simd::float4x4 makeScale(const simd::float3& v);
 
 class Renderer {
 public:
-    Renderer(MTL::Device* pDevice);
+    Renderer(MTL::Device* device);
     ~Renderer();
     void buildShaders();
     void buildDepthStencilStates();
     void buildBuffers();
-    void draw(MTK::View* pView);
+    void draw(MTK::View* view);
 
 private:
-    MTL::Device* _pDevice;
-    MTL::CommandQueue* _pCommandQueue;
-    MTL::Library* _pShaderLibrary;
-    MTL::RenderPipelineState* _pPSO;
-    MTL::DepthStencilState* _pDepthStencilState;
-    MTL::Buffer* _pVertexDataBuffer;
-    MTL::Buffer* _pInstanceDataBuffer[kMaxFramesInFlight];
-    MTL::Buffer* _pCameraDataBuffer[kMaxFramesInFlight];
-    MTL::Buffer* _pIndexBuffer;
+    MTL::Device* m_device;
+    MTL::CommandQueue* m_commandQueue;
+    MTL::Library* m_shaderLibrary;
+    MTL::RenderPipelineState* m_renderPipelineState;
+    MTL::DepthStencilState* m_depthStencilState;
+    MTL::Buffer* m_vertexDataBuffer;
+    MTL::Buffer* m_instanceDataBuffer[kMaxFramesInFlight];
+    MTL::Buffer* m_cameraDataBuffer[kMaxFramesInFlight];
+    MTL::Buffer* m_indexBuffer;
     float _angle;
     int _frame;
     dispatch_semaphore_t _semaphore;
@@ -70,9 +70,9 @@ private:
 
 class MyMTKViewDelegate : public MTK::ViewDelegate {
 public:
-    MyMTKViewDelegate(MTL::Device* pDevice);
+    MyMTKViewDelegate(MTL::Device* device);
     virtual ~MyMTKViewDelegate() override;
-    virtual void drawInMTKView(MTK::View* pView) override;
+    virtual void drawInMTKView(MTK::View* view) override;
 
 private:
     Renderer* m_renderer;
@@ -84,30 +84,30 @@ public:
 
     NS::Menu* createMenuBar();
 
-    virtual void applicationWillFinishLaunching(NS::Notification* pNotification) override;
-    virtual void applicationDidFinishLaunching(NS::Notification* pNotification) override;
-    virtual bool applicationShouldTerminateAfterLastWindowClosed(NS::Application* pSender) override;
+    virtual void applicationWillFinishLaunching(NS::Notification* notification) override;
+    virtual void applicationDidFinishLaunching(NS::Notification* notification) override;
+    virtual bool applicationShouldTerminateAfterLastWindowClosed(NS::Application* sender) override;
 
 private:
-    NS::Window* _pWindow;
-    MTK::View* _pMtkView;
-    MTL::Device* _pDevice;
-    MyMTKViewDelegate* _pViewDelegate = nullptr;
+    NS::Window* m_window;
+    MTK::View* m_mtkView;
+    MTL::Device* m_device;
+    MyMTKViewDelegate* m_viewDelegate = nullptr;
 };
 
 #pragma endregion Declarations }
 
 int main(int argc, char* argv[])
 {
-    NS::AutoreleasePool* pAutoreleasePool = NS::AutoreleasePool::alloc()->init();
+    NS::AutoreleasePool* autoreleasePool = NS::AutoreleasePool::alloc()->init();
 
     MyAppDelegate del;
 
-    NS::Application* pSharedApplication = NS::Application::sharedApplication();
-    pSharedApplication->setDelegate(&del);
-    pSharedApplication->run();
+    NS::Application* sharedApplication = NS::Application::sharedApplication();
+    sharedApplication->setDelegate(&del);
+    sharedApplication->run();
 
-    pAutoreleasePool->release();
+    autoreleasePool->release();
 
     return 0;
 }
@@ -117,93 +117,93 @@ int main(int argc, char* argv[])
 
 MyAppDelegate::~MyAppDelegate()
 {
-    _pMtkView->release();
-    _pWindow->release();
-    _pDevice->release();
-    delete _pViewDelegate;
+    m_mtkView->release();
+    m_window->release();
+    m_device->release();
+    delete m_viewDelegate;
 }
 
 NS::Menu* MyAppDelegate::createMenuBar()
 {
     using NS::StringEncoding::UTF8StringEncoding;
 
-    NS::Menu* pMainMenu = NS::Menu::alloc()->init();
-    NS::MenuItem* pAppMenuItem = NS::MenuItem::alloc()->init();
-    NS::Menu* pAppMenu = NS::Menu::alloc()->init(NS::String::string("Appname", UTF8StringEncoding));
+    NS::Menu* mainMenu = NS::Menu::alloc()->init();
+    NS::MenuItem* appMenuItem = NS::MenuItem::alloc()->init();
+    NS::Menu* appMenu = NS::Menu::alloc()->init(NS::String::string("Appname", UTF8StringEncoding));
 
     NS::String* appName = NS::RunningApplication::currentApplication()->localizedName();
     NS::String* quitItemName = NS::String::string("Quit ", UTF8StringEncoding)->stringByAppendingString(appName);
-    SEL quitCb = NS::MenuItem::registerActionCallback("appQuit", [](void*, SEL, const NS::Object* pSender) {
-        auto pApp = NS::Application::sharedApplication();
-        pApp->terminate(pSender);
+    SEL quitCb = NS::MenuItem::registerActionCallback("appQuit", [](void*, SEL, const NS::Object* sender) {
+        auto app = NS::Application::sharedApplication();
+        app->terminate(sender);
     });
 
-    NS::MenuItem* pAppQuitItem = pAppMenu->addItem(quitItemName, quitCb, NS::String::string("q", UTF8StringEncoding));
-    pAppQuitItem->setKeyEquivalentModifierMask(NS::EventModifierFlagCommand);
-    pAppMenuItem->setSubmenu(pAppMenu);
+    NS::MenuItem* appQuitItem = appMenu->addItem(quitItemName, quitCb, NS::String::string("q", UTF8StringEncoding));
+    appQuitItem->setKeyEquivalentModifierMask(NS::EventModifierFlagCommand);
+    appMenuItem->setSubmenu(appMenu);
 
-    NS::MenuItem* pWindowMenuItem = NS::MenuItem::alloc()->init();
-    NS::Menu* pWindowMenu = NS::Menu::alloc()->init(NS::String::string("Window", UTF8StringEncoding));
+    NS::MenuItem* windowMenuItem = NS::MenuItem::alloc()->init();
+    NS::Menu* windowMenu = NS::Menu::alloc()->init(NS::String::string("Window", UTF8StringEncoding));
 
     SEL closeWindowCb = NS::MenuItem::registerActionCallback("windowClose", [](void*, SEL, const NS::Object*) {
-        auto pApp = NS::Application::sharedApplication();
-        pApp->windows()->object<NS::Window>(0)->close();
+        auto app = NS::Application::sharedApplication();
+        app->windows()->object<NS::Window>(0)->close();
     });
-    NS::MenuItem* pCloseWindowItem = pWindowMenu->addItem(NS::String::string("Close Window", UTF8StringEncoding), closeWindowCb, NS::String::string("w", UTF8StringEncoding));
-    pCloseWindowItem->setKeyEquivalentModifierMask(NS::EventModifierFlagCommand);
+    NS::MenuItem* closeWindowItem = windowMenu->addItem(NS::String::string("Close Window", UTF8StringEncoding), closeWindowCb, NS::String::string("w", UTF8StringEncoding));
+    closeWindowItem->setKeyEquivalentModifierMask(NS::EventModifierFlagCommand);
 
-    pWindowMenuItem->setSubmenu(pWindowMenu);
+    windowMenuItem->setSubmenu(windowMenu);
 
-    pMainMenu->addItem(pAppMenuItem);
-    pMainMenu->addItem(pWindowMenuItem);
+    mainMenu->addItem(appMenuItem);
+    mainMenu->addItem(windowMenuItem);
 
-    pAppMenuItem->release();
-    pWindowMenuItem->release();
-    pAppMenu->release();
-    pWindowMenu->release();
+    appMenuItem->release();
+    windowMenuItem->release();
+    appMenu->release();
+    windowMenu->release();
 
-    return pMainMenu->autorelease();
+    return mainMenu->autorelease();
 }
 
-void MyAppDelegate::applicationWillFinishLaunching(NS::Notification* pNotification)
+void MyAppDelegate::applicationWillFinishLaunching(NS::Notification* notification)
 {
     NS::Menu* pMenu = createMenuBar();
-    NS::Application* pApp = reinterpret_cast<NS::Application*>(pNotification->object());
-    pApp->setMainMenu(pMenu);
-    pApp->setActivationPolicy(NS::ActivationPolicy::ActivationPolicyRegular);
+    NS::Application* app = reinterpret_cast<NS::Application*>(notification->object());
+    app->setMainMenu(pMenu);
+    app->setActivationPolicy(NS::ActivationPolicy::ActivationPolicyRegular);
 }
 
-void MyAppDelegate::applicationDidFinishLaunching(NS::Notification* pNotification)
+void MyAppDelegate::applicationDidFinishLaunching(NS::Notification* notification)
 {
     CGRect frame = (CGRect) { { 100.0, 100.0 }, { 512.0, 512.0 } };
 
-    _pWindow = NS::Window::alloc()->init(
+    m_window = NS::Window::alloc()->init(
         frame,
         NS::WindowStyleMaskClosable | NS::WindowStyleMaskTitled,
         NS::BackingStoreBuffered,
         false);
 
-    _pDevice = MTL::CreateSystemDefaultDevice();
+    m_device = MTL::CreateSystemDefaultDevice();
 
-    _pMtkView = MTK::View::alloc()->init(frame, _pDevice);
-    _pMtkView->setColorPixelFormat(MTL::PixelFormat::PixelFormatBGRA8Unorm_sRGB);
-    _pMtkView->setClearColor(MTL::ClearColor::Make(0.1, 0.1, 0.1, 1.0));
-    _pMtkView->setDepthStencilPixelFormat(MTL::PixelFormat::PixelFormatDepth16Unorm);
-    _pMtkView->setClearDepth(1.0f);
+    m_mtkView = MTK::View::alloc()->init(frame, m_device);
+    m_mtkView->setColorPixelFormat(MTL::PixelFormat::PixelFormatBGRA8Unorm_sRGB);
+    m_mtkView->setClearColor(MTL::ClearColor::Make(0.1, 0.1, 0.1, 1.0));
+    m_mtkView->setDepthStencilPixelFormat(MTL::PixelFormat::PixelFormatDepth16Unorm);
+    m_mtkView->setClearDepth(1.0f);
 
-    _pViewDelegate = new MyMTKViewDelegate(_pDevice);
-    _pMtkView->setDelegate(_pViewDelegate);
+    m_viewDelegate = new MyMTKViewDelegate(m_device);
+    m_mtkView->setDelegate(m_viewDelegate);
 
-    _pWindow->setContentView(_pMtkView);
-    _pWindow->setTitle(NS::String::string("05 - Perspective", NS::StringEncoding::UTF8StringEncoding));
+    m_window->setContentView(m_mtkView);
+    m_window->setTitle(NS::String::string("05 - Perspective", NS::StringEncoding::UTF8StringEncoding));
 
-    _pWindow->makeKeyAndOrderFront(nullptr);
+    m_window->makeKeyAndOrderFront(nullptr);
 
-    NS::Application* pApp = reinterpret_cast<NS::Application*>(pNotification->object());
-    pApp->activateIgnoringOtherApps(true);
+    NS::Application* app = reinterpret_cast<NS::Application*>(notification->object());
+    app->activateIgnoringOtherApps(true);
 }
 
-bool MyAppDelegate::applicationShouldTerminateAfterLastWindowClosed(NS::Application* pSender)
+bool MyAppDelegate::applicationShouldTerminateAfterLastWindowClosed(NS::Application* sender)
 {
     return true;
 }
@@ -213,9 +213,9 @@ bool MyAppDelegate::applicationShouldTerminateAfterLastWindowClosed(NS::Applicat
 #pragma mark - ViewDelegate
 #pragma region ViewDelegate {
 
-MyMTKViewDelegate::MyMTKViewDelegate(MTL::Device* pDevice)
+MyMTKViewDelegate::MyMTKViewDelegate(MTL::Device* device)
     : MTK::ViewDelegate()
-    , m_renderer(new Renderer(pDevice))
+    , m_renderer(new Renderer(device))
 {
 }
 
@@ -224,9 +224,9 @@ MyMTKViewDelegate::~MyMTKViewDelegate()
     delete m_renderer;
 }
 
-void MyMTKViewDelegate::drawInMTKView(MTK::View* pView)
+void MyMTKViewDelegate::drawInMTKView(MTK::View* view)
 {
-    m_renderer->draw(pView);
+    m_renderer->draw(view);
 }
 
 #pragma endregion ViewDelegate }
@@ -316,12 +316,12 @@ simd::float4x4 makeScale(const simd::float3& v)
 
 const int Renderer::kMaxFramesInFlight = 3;
 
-Renderer::Renderer(MTL::Device* pDevice)
-    : _pDevice(pDevice->retain())
+Renderer::Renderer(MTL::Device* device)
+    : m_device(device->retain())
     , _angle(0.f)
     , _frame(0)
 {
-    _pCommandQueue = _pDevice->newCommandQueue();
+    m_commandQueue = m_device->newCommandQueue();
     buildShaders();
     buildDepthStencilStates();
     buildBuffers();
@@ -331,19 +331,19 @@ Renderer::Renderer(MTL::Device* pDevice)
 
 Renderer::~Renderer()
 {
-    _pShaderLibrary->release();
-    _pDepthStencilState->release();
-    _pVertexDataBuffer->release();
+    m_shaderLibrary->release();
+    m_depthStencilState->release();
+    m_vertexDataBuffer->release();
     for (int i = 0; i < kMaxFramesInFlight; ++i) {
-        _pInstanceDataBuffer[i]->release();
+        m_instanceDataBuffer[i]->release();
     }
     for (int i = 0; i < kMaxFramesInFlight; ++i) {
-        _pCameraDataBuffer[i]->release();
+        m_cameraDataBuffer[i]->release();
     }
-    _pIndexBuffer->release();
-    _pPSO->release();
-    _pCommandQueue->release();
-    _pDevice->release();
+    m_indexBuffer->release();
+    m_renderPipelineState->release();
+    m_commandQueue->release();
+    m_device->release();
 }
 
 namespace shader_types {
@@ -411,7 +411,7 @@ void Renderer::buildShaders()
     )";
 
     NS::Error* pError = nullptr;
-    MTL::Library* pLibrary = _pDevice->newLibrary(NS::String::string(shaderSrc, UTF8StringEncoding), nullptr, &pError);
+    MTL::Library* pLibrary = m_device->newLibrary(NS::String::string(shaderSrc, UTF8StringEncoding), nullptr, &pError);
     if (!pLibrary) {
         __builtin_printf("%s", pError->localizedDescription()->utf8String());
         assert(false);
@@ -426,8 +426,8 @@ void Renderer::buildShaders()
     pDesc->colorAttachments()->object(0)->setPixelFormat(MTL::PixelFormat::PixelFormatBGRA8Unorm_sRGB);
     pDesc->setDepthAttachmentPixelFormat(MTL::PixelFormat::PixelFormatDepth16Unorm);
 
-    _pPSO = _pDevice->newRenderPipelineState(pDesc, &pError);
-    if (!_pPSO) {
+    m_renderPipelineState = m_device->newRenderPipelineState(pDesc, &pError);
+    if (!m_renderPipelineState) {
         __builtin_printf("%s", pError->localizedDescription()->utf8String());
         assert(false);
     }
@@ -435,7 +435,7 @@ void Renderer::buildShaders()
     pVertexFn->release();
     pFragFn->release();
     pDesc->release();
-    _pShaderLibrary = pLibrary;
+    m_shaderLibrary = pLibrary;
 }
 
 void Renderer::buildDepthStencilStates()
@@ -444,7 +444,7 @@ void Renderer::buildDepthStencilStates()
     pDsDesc->setDepthCompareFunction(MTL::CompareFunction::CompareFunctionLess);
     pDsDesc->setDepthWriteEnabled(true);
 
-    _pDepthStencilState = _pDevice->newDepthStencilState(pDsDesc);
+    m_depthStencilState = m_device->newDepthStencilState(pDsDesc);
 
     pDsDesc->release();
 }
@@ -489,30 +489,30 @@ void Renderer::buildBuffers()
     const size_t vertexDataSize = sizeof(verts);
     const size_t indexDataSize = sizeof(indices);
 
-    MTL::Buffer* pVertexBuffer = _pDevice->newBuffer(vertexDataSize, MTL::ResourceStorageModeManaged);
-    MTL::Buffer* pIndexBuffer = _pDevice->newBuffer(indexDataSize, MTL::ResourceStorageModeManaged);
+    MTL::Buffer* pVertexBuffer = m_device->newBuffer(vertexDataSize, MTL::ResourceStorageModeManaged);
+    MTL::Buffer* pIndexBuffer = m_device->newBuffer(indexDataSize, MTL::ResourceStorageModeManaged);
 
-    _pVertexDataBuffer = pVertexBuffer;
-    _pIndexBuffer = pIndexBuffer;
+    m_vertexDataBuffer = pVertexBuffer;
+    m_indexBuffer = pIndexBuffer;
 
-    memcpy(_pVertexDataBuffer->contents(), verts, vertexDataSize);
-    memcpy(_pIndexBuffer->contents(), indices, indexDataSize);
+    memcpy(m_vertexDataBuffer->contents(), verts, vertexDataSize);
+    memcpy(m_indexBuffer->contents(), indices, indexDataSize);
 
-    _pVertexDataBuffer->didModifyRange(NS::Range::Make(0, _pVertexDataBuffer->length()));
-    _pIndexBuffer->didModifyRange(NS::Range::Make(0, _pIndexBuffer->length()));
+    m_vertexDataBuffer->didModifyRange(NS::Range::Make(0, m_vertexDataBuffer->length()));
+    m_indexBuffer->didModifyRange(NS::Range::Make(0, m_indexBuffer->length()));
 
     const size_t instanceDataSize = kMaxFramesInFlight * kNumInstances * sizeof(shader_types::InstanceData);
     for (size_t i = 0; i < kMaxFramesInFlight; ++i) {
-        _pInstanceDataBuffer[i] = _pDevice->newBuffer(instanceDataSize, MTL::ResourceStorageModeManaged);
+        m_instanceDataBuffer[i] = m_device->newBuffer(instanceDataSize, MTL::ResourceStorageModeManaged);
     }
 
     const size_t cameraDataSize = kMaxFramesInFlight * sizeof(shader_types::CameraData);
     for (size_t i = 0; i < kMaxFramesInFlight; ++i) {
-        _pCameraDataBuffer[i] = _pDevice->newBuffer(cameraDataSize, MTL::ResourceStorageModeManaged);
+        m_cameraDataBuffer[i] = m_device->newBuffer(cameraDataSize, MTL::ResourceStorageModeManaged);
     }
 }
 
-void Renderer::draw(MTK::View* pView)
+void Renderer::draw(MTK::View* view)
 {
     using simd::float3;
     using simd::float4;
@@ -521,12 +521,12 @@ void Renderer::draw(MTK::View* pView)
     NS::AutoreleasePool* pPool = NS::AutoreleasePool::alloc()->init();
 
     _frame = (_frame + 1) % Renderer::kMaxFramesInFlight;
-    MTL::Buffer* pInstanceDataBuffer = _pInstanceDataBuffer[_frame];
+    MTL::Buffer* pInstanceDataBuffer = m_instanceDataBuffer[_frame];
 
-    MTL::CommandBuffer* pCmd = _pCommandQueue->commandBuffer();
+    MTL::CommandBuffer* commandBuffer = m_commandQueue->commandBuffer();
     dispatch_semaphore_wait(_semaphore, DISPATCH_TIME_FOREVER);
     Renderer* pRenderer = this;
-    pCmd->addCompletedHandler(^void(MTL::CommandBuffer* pCmd) {
+    commandBuffer->addCompletedHandler(^void(MTL::CommandBuffer* commandBuffer) {
         dispatch_semaphore_signal(pRenderer->_semaphore);
     });
 
@@ -566,7 +566,7 @@ void Renderer::draw(MTK::View* pView)
 
     // Update camera state:
 
-    MTL::Buffer* pCameraDataBuffer = _pCameraDataBuffer[_frame];
+    MTL::Buffer* pCameraDataBuffer = m_cameraDataBuffer[_frame];
     shader_types::CameraData* pCameraData = reinterpret_cast<shader_types::CameraData*>(pCameraDataBuffer->contents());
     pCameraData->perspectiveTransform = math::makePerspective(45.f * M_PI / 180.f, 1.f, 0.03f, 500.0f);
     pCameraData->worldTransform = math::makeIdentity();
@@ -574,28 +574,28 @@ void Renderer::draw(MTK::View* pView)
 
     // Begin render pass:
 
-    MTL::RenderPassDescriptor* pRpd = pView->currentRenderPassDescriptor();
-    MTL::RenderCommandEncoder* pEnc = pCmd->renderCommandEncoder(pRpd);
+    MTL::RenderPassDescriptor* pRpd = view->currentRenderPassDescriptor();
+    MTL::RenderCommandEncoder* renderCommandEncoder = commandBuffer->renderCommandEncoder(pRpd);
 
-    pEnc->setRenderPipelineState(_pPSO);
-    pEnc->setDepthStencilState(_pDepthStencilState);
+    renderCommandEncoder->setRenderPipelineState(m_renderPipelineState);
+    renderCommandEncoder->setDepthStencilState(m_depthStencilState);
 
-    pEnc->setVertexBuffer(_pVertexDataBuffer, /* offset */ 0, /* index */ 0);
-    pEnc->setVertexBuffer(pInstanceDataBuffer, /* offset */ 0, /* index */ 1);
-    pEnc->setVertexBuffer(pCameraDataBuffer, /* offset */ 0, /* index */ 2);
+    renderCommandEncoder->setVertexBuffer(m_vertexDataBuffer, /* offset */ 0, /* index */ 0);
+    renderCommandEncoder->setVertexBuffer(pInstanceDataBuffer, /* offset */ 0, /* index */ 1);
+    renderCommandEncoder->setVertexBuffer(pCameraDataBuffer, /* offset */ 0, /* index */ 2);
 
-    pEnc->setCullMode(MTL::CullModeBack);
-    pEnc->setFrontFacingWinding(MTL::Winding::WindingCounterClockwise);
+    renderCommandEncoder->setCullMode(MTL::CullModeBack);
+    renderCommandEncoder->setFrontFacingWinding(MTL::Winding::WindingCounterClockwise);
 
-    pEnc->drawIndexedPrimitives(MTL::PrimitiveType::PrimitiveTypeTriangle,
+    renderCommandEncoder->drawIndexedPrimitives(MTL::PrimitiveType::PrimitiveTypeTriangle,
         6 * 6, MTL::IndexType::IndexTypeUInt16,
-        _pIndexBuffer,
+        m_indexBuffer,
         0,
         kNumInstances);
 
-    pEnc->endEncoding();
-    pCmd->presentDrawable(pView->currentDrawable());
-    pCmd->commit();
+    renderCommandEncoder->endEncoding();
+    commandBuffer->presentDrawable(view->currentDrawable());
+    commandBuffer->commit();
 
     pPool->release();
 }

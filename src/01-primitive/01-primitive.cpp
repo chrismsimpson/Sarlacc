@@ -1,3 +1,19 @@
+/*
+ *
+ * Copyright 2022 Apple Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #include <cassert>
 
@@ -9,17 +25,24 @@
 #include <Metal/Metal.hpp>
 #include <MetalKit/MetalKit.hpp>
 
+#include <simd/simd.h>
+
 #pragma region Declarations {
 
 class Renderer {
 public:
     Renderer(MTL::Device* device);
     ~Renderer();
+    void buildShaders();
+    void buildBuffers();
     void draw(MTK::View* view);
 
 private:
     MTL::Device* m_device;
     MTL::CommandQueue* m_commandQueue;
+    MTL::RenderPipelineState* m_renderPipelineState;
+    MTL::Buffer* m_vertexPositionsBuffer;
+    MTL::Buffer* m_vertexColorsBuffer;
 };
 
 class MyMTKViewDelegate : public MTK::ViewDelegate {
@@ -55,10 +78,10 @@ int main(int argc, char* argv[])
 {
     NS::AutoreleasePool* autoreleasePool = NS::AutoreleasePool::alloc()->init();
 
-    MyAppDelegate delegate;
+    MyAppDelegate del;
 
     NS::Application* sharedApplication = NS::Application::sharedApplication();
-    sharedApplication->setDelegate(&delegate);
+    sharedApplication->setDelegate(&del);
     sharedApplication->run();
 
     autoreleasePool->release();
@@ -87,7 +110,6 @@ NS::Menu* MyAppDelegate::createMenuBar()
 
     NS::String* appName = NS::RunningApplication::currentApplication()->localizedName();
     NS::String* quitItemName = NS::String::string("Quit ", UTF8StringEncoding)->stringByAppendingString(appName);
-
     SEL quitCb = NS::MenuItem::registerActionCallback("appQuit", [](void*, SEL, const NS::Object* sender) {
         auto app = NS::Application::sharedApplication();
         app->terminate(sender);
@@ -104,7 +126,6 @@ NS::Menu* MyAppDelegate::createMenuBar()
         auto app = NS::Application::sharedApplication();
         app->windows()->object<NS::Window>(0)->close();
     });
-
     NS::MenuItem* closeWindowItem = windowMenu->addItem(NS::String::string("Close Window", UTF8StringEncoding), closeWindowCb, NS::String::string("w", UTF8StringEncoding));
     closeWindowItem->setKeyEquivalentModifierMask(NS::EventModifierFlagCommand);
 
@@ -123,9 +144,9 @@ NS::Menu* MyAppDelegate::createMenuBar()
 
 void MyAppDelegate::applicationWillFinishLaunching(NS::Notification* notification)
 {
-    NS::Menu* menu = createMenuBar();
+    NS::Menu* pMenu = createMenuBar();
     NS::Application* app = reinterpret_cast<NS::Application*>(notification->object());
-    app->setMainMenu(menu);
+    app->setMainMenu(pMenu);
     app->setActivationPolicy(NS::ActivationPolicy::ActivationPolicyRegular);
 }
 
@@ -149,7 +170,7 @@ void MyAppDelegate::applicationDidFinishLaunching(NS::Notification* notification
     m_mtkView->setDelegate(m_viewDelegate);
 
     m_window->setContentView(m_mtkView);
-    m_window->setTitle(NS::String::string("00 - Window", NS::StringEncoding::UTF8StringEncoding));
+    m_window->setTitle(NS::String::string("01 - Primitive", NS::StringEncoding::UTF8StringEncoding));
 
     m_window->makeKeyAndOrderFront(nullptr);
 
@@ -157,7 +178,7 @@ void MyAppDelegate::applicationDidFinishLaunching(NS::Notification* notification
     app->activateIgnoringOtherApps(true);
 }
 
-bool MyAppDelegate::applicationShouldTerminateAfterLastWindowClosed(NS::Application* application)
+bool MyAppDelegate::applicationShouldTerminateAfterLastWindowClosed(NS::Application* sender)
 {
     return true;
 }
@@ -192,26 +213,126 @@ Renderer::Renderer(MTL::Device* device)
     : m_device(device->retain())
 {
     m_commandQueue = m_device->newCommandQueue();
+    buildShaders();
+    buildBuffers();
 }
 
 Renderer::~Renderer()
 {
+    m_vertexPositionsBuffer->release();
+    m_vertexColorsBuffer->release();
+    m_renderPipelineState->release();
     m_commandQueue->release();
     m_device->release();
 }
 
+void Renderer::buildShaders()
+{
+    using NS::StringEncoding::UTF8StringEncoding;
+
+    const char* shaderSrc = R"(
+        #include <metal_stdlib>
+        using namespace metal;
+
+        struct v2f
+        {
+            float4 position [[position]];
+            half3 color;
+        };
+
+        v2f vertex vertexMain( uint vertexId [[vertex_id]],
+                               device const float3* positions [[buffer(0)]],
+                               device const float3* colors [[buffer(1)]] )
+        {
+            v2f o;
+            o.position = float4( positions[ vertexId ], 1.0 );
+            o.color = half3 ( colors[ vertexId ] );
+            return o;
+        }
+
+        half4 fragment fragmentMain( v2f in [[stage_in]] )
+        {
+            return half4( in.color, 1.0 );
+        }
+    )";
+
+    NS::Error* pError = nullptr;
+    MTL::Library* pLibrary = m_device->newLibrary(NS::String::string(shaderSrc, UTF8StringEncoding), nullptr, &pError);
+    if (!pLibrary) {
+        __builtin_printf("%s", pError->localizedDescription()->utf8String());
+        assert(false);
+    }
+
+    MTL::Function* pVertexFn = pLibrary->newFunction(NS::String::string("vertexMain", UTF8StringEncoding));
+    MTL::Function* pFragFn = pLibrary->newFunction(NS::String::string("fragmentMain", UTF8StringEncoding));
+
+    MTL::RenderPipelineDescriptor* pDesc = MTL::RenderPipelineDescriptor::alloc()->init();
+    pDesc->setVertexFunction(pVertexFn);
+    pDesc->setFragmentFunction(pFragFn);
+    pDesc->colorAttachments()->object(0)->setPixelFormat(MTL::PixelFormat::PixelFormatBGRA8Unorm_sRGB);
+
+    m_renderPipelineState = m_device->newRenderPipelineState(pDesc, &pError);
+    if (!m_renderPipelineState) {
+        __builtin_printf("%s", pError->localizedDescription()->utf8String());
+        assert(false);
+    }
+
+    pVertexFn->release();
+    pFragFn->release();
+    pDesc->release();
+    pLibrary->release();
+}
+
+void Renderer::buildBuffers()
+{
+    const size_t NumVertices = 3;
+
+    simd::float3 positions[NumVertices] = {
+        { -0.8f, 0.8f, 0.0f },
+        { 0.0f, -0.8f, 0.0f },
+        { +0.8f, 0.8f, 0.0f }
+    };
+
+    simd::float3 colors[NumVertices] = {
+        { 1.0, 0.3f, 0.2f },
+        { 0.8f, 1.0, 0.0f },
+        { 0.8f, 0.0f, 1.0 }
+    };
+
+    const size_t positionsDataSize = NumVertices * sizeof(simd::float3);
+    const size_t colorDataSize = NumVertices * sizeof(simd::float3);
+
+    MTL::Buffer* pVertexPositionsBuffer = m_device->newBuffer(positionsDataSize, MTL::ResourceStorageModeManaged);
+    MTL::Buffer* pVertexColorsBuffer = m_device->newBuffer(colorDataSize, MTL::ResourceStorageModeManaged);
+
+    m_vertexPositionsBuffer = pVertexPositionsBuffer;
+    m_vertexColorsBuffer = pVertexColorsBuffer;
+
+    memcpy(m_vertexPositionsBuffer->contents(), positions, positionsDataSize);
+    memcpy(m_vertexColorsBuffer->contents(), colors, colorDataSize);
+
+    m_vertexPositionsBuffer->didModifyRange(NS::Range::Make(0, m_vertexPositionsBuffer->length()));
+    m_vertexColorsBuffer->didModifyRange(NS::Range::Make(0, m_vertexColorsBuffer->length()));
+}
+
 void Renderer::draw(MTK::View* view)
 {
-    NS::AutoreleasePool* autoreleasePool = NS::AutoreleasePool::alloc()->init();
+    NS::AutoreleasePool* pPool = NS::AutoreleasePool::alloc()->init();
 
     MTL::CommandBuffer* commandBuffer = m_commandQueue->commandBuffer();
-    MTL::RenderPassDescriptor* renderPassDescriptor = view->currentRenderPassDescriptor();
-    MTL::RenderCommandEncoder* renderCommandEncoder = commandBuffer->renderCommandEncoder(renderPassDescriptor);
+    MTL::RenderPassDescriptor* pRpd = view->currentRenderPassDescriptor();
+    MTL::RenderCommandEncoder* renderCommandEncoder = commandBuffer->renderCommandEncoder(pRpd);
+
+    renderCommandEncoder->setRenderPipelineState(m_renderPipelineState);
+    renderCommandEncoder->setVertexBuffer(m_vertexPositionsBuffer, 0, 0);
+    renderCommandEncoder->setVertexBuffer(m_vertexColorsBuffer, 0, 1);
+    renderCommandEncoder->drawPrimitives(MTL::PrimitiveType::PrimitiveTypeTriangle, NS::UInteger(0), NS::UInteger(3));
+
     renderCommandEncoder->endEncoding();
     commandBuffer->presentDrawable(view->currentDrawable());
     commandBuffer->commit();
 
-    autoreleasePool->release();
+    pPool->release();
 }
 
 #pragma endregion Renderer }
