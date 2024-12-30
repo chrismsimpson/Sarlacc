@@ -76,7 +76,7 @@ private:
     MTL::Buffer* m_textureAnimationBuffer;
     float m_angle;
     int m_frame;
-    dispatch_semaphore_t _semaphore;
+    dispatch_semaphore_t m_semaphore;
     static const int MAX_FRAMES_IN_FLIGHT;
     uint _animationIndex;
 };
@@ -347,7 +347,7 @@ Renderer::Renderer(MTL::Device* device)
     buildTextures();
     buildBuffers();
 
-    _semaphore = dispatch_semaphore_create(Renderer::MAX_FRAMES_IN_FLIGHT);
+    m_semaphore = dispatch_semaphore_create(Renderer::MAX_FRAMES_IN_FLIGHT);
 }
 
 Renderer::~Renderer()
@@ -702,10 +702,10 @@ void Renderer::draw(MTK::View* view)
     MTL::Buffer* pInstanceDataBuffer = m_instanceDataBuffer[m_frame];
 
     MTL::CommandBuffer* commandBuffer = m_commandQueue->commandBuffer();
-    dispatch_semaphore_wait(_semaphore, DISPATCH_TIME_FOREVER);
+    dispatch_semaphore_wait(m_semaphore, DISPATCH_TIME_FOREVER);
     Renderer* pRenderer = this;
     commandBuffer->addCompletedHandler(^void(MTL::CommandBuffer* commandBuffer) {
-        dispatch_semaphore_signal(pRenderer->_semaphore);
+        dispatch_semaphore_signal(pRenderer->m_semaphore);
     });
 
     m_angle += 0.002f;

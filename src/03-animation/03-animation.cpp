@@ -49,7 +49,7 @@ private:
     MTL::Buffer* _pFrameData[3];
     float m_angle;
     int m_frame;
-    dispatch_semaphore_t _semaphore;
+    dispatch_semaphore_t m_semaphore;
     static const int MAX_FRAMES_IN_FLIGHT;
 };
 
@@ -229,7 +229,7 @@ Renderer::Renderer(MTL::Device* device)
     buildBuffers();
     buildFrameData();
 
-    _semaphore = dispatch_semaphore_create(Renderer::MAX_FRAMES_IN_FLIGHT);
+    m_semaphore = dispatch_semaphore_create(Renderer::MAX_FRAMES_IN_FLIGHT);
 }
 
 Renderer::~Renderer()
@@ -384,10 +384,10 @@ void Renderer::draw(MTK::View* view)
     MTL::Buffer* frameDataBuffer = _pFrameData[m_frame];
 
     MTL::CommandBuffer* commandBuffer = m_commandQueue->commandBuffer();
-    dispatch_semaphore_wait(_semaphore, DISPATCH_TIME_FOREVER);
+    dispatch_semaphore_wait(m_semaphore, DISPATCH_TIME_FOREVER);
     Renderer* pRenderer = this;
     commandBuffer->addCompletedHandler(^void(MTL::CommandBuffer* commandBuffer) {
-        dispatch_semaphore_signal(pRenderer->_semaphore);
+        dispatch_semaphore_signal(pRenderer->m_semaphore);
     });
 
     reinterpret_cast<FrameData*>(frameDataBuffer->contents())->angle = (m_angle += 0.01f);
