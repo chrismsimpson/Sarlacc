@@ -58,7 +58,7 @@ public:
     void buildDepthStencilStates();
     void buildTextures();
     void buildBuffers();
-    void generateMandelbrotTexture(MTL::CommandBuffer* pCommandBuffer);
+    void generateMandelbrotTexture(MTL::CommandBuffer* commandBuffer);
     void draw(MTK::View* view);
 
 private:
@@ -666,28 +666,28 @@ void Renderer::buildBuffers()
     m_textureAnimationBuffer = m_device->newBuffer(sizeof(uint), MTL::ResourceStorageModeManaged);
 }
 
-void Renderer::generateMandelbrotTexture(MTL::CommandBuffer* pCommandBuffer)
+void Renderer::generateMandelbrotTexture(MTL::CommandBuffer* commandBuffer)
 {
-    assert(pCommandBuffer);
+    assert(commandBuffer);
 
     uint* ptr = reinterpret_cast<uint*>(m_textureAnimationBuffer->contents());
     *ptr = (m_animationIndex++) % 5000;
     m_textureAnimationBuffer->didModifyRange(NS::Range::Make(0, sizeof(uint)));
 
-    MTL::ComputeCommandEncoder* pComputeEncoder = pCommandBuffer->computeCommandEncoder();
+    MTL::ComputeCommandEncoder* computeEncoder = commandBuffer->computeCommandEncoder();
 
-    pComputeEncoder->setComputePipelineState(m_computePipelineState);
-    pComputeEncoder->setTexture(m_texture, 0);
-    pComputeEncoder->setBuffer(m_textureAnimationBuffer, 0, 0);
+    computeEncoder->setComputePipelineState(m_computePipelineState);
+    computeEncoder->setTexture(m_texture, 0);
+    computeEncoder->setBuffer(m_textureAnimationBuffer, 0, 0);
 
     MTL::Size gridSize = MTL::Size(kTextureWidth, kTextureHeight, 1);
 
     NS::UInteger threadGroupSize = m_computePipelineState->maxTotalThreadsPerThreadgroup();
     MTL::Size threadgroupSize(threadGroupSize, 1, 1);
 
-    pComputeEncoder->dispatchThreads(gridSize, threadgroupSize);
+    computeEncoder->dispatchThreads(gridSize, threadgroupSize);
 
-    pComputeEncoder->endEncoding();
+    computeEncoder->endEncoding();
 }
 
 void Renderer::draw(MTK::View* view)

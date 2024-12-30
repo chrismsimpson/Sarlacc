@@ -65,7 +65,7 @@ public:
     void buildDepthStencilStates();
     void buildTextures();
     void buildBuffers();
-    void generateMandelbrotTexture(MTL::CommandBuffer* pCommandBuffer);
+    void generateMandelbrotTexture(MTL::CommandBuffer* commandBuffer);
     void draw(MTK::View* view);
     void triggerCapture();
     static bool beginCapture;
@@ -712,48 +712,48 @@ void Renderer::triggerCapture()
     std::strftime(filename, NAME_MAX, "capture-%H-%M-%S_%m-%d-%y.gputrace", std::localtime(&now));
 
     m_traceSaveFilePath = NSTemporaryDirectory()->stringByAppendingString(NS::String::string(filename, NS::UTF8StringEncoding));
-    NS::URL* pURL = NS::URL::alloc()->initFileURLWithPath(m_traceSaveFilePath);
+    NS::URL* url = NS::URL::alloc()->initFileURLWithPath(m_traceSaveFilePath);
 
-    MTL::CaptureDescriptor* pCaptureDescriptor = MTL::CaptureDescriptor::alloc()->init();
+    MTL::CaptureDescriptor* captureDescriptor = MTL::CaptureDescriptor::alloc()->init();
 
-    pCaptureDescriptor->setDestination(MTL::CaptureDestinationGPUTraceDocument);
-    pCaptureDescriptor->setOutputURL(pURL);
-    pCaptureDescriptor->setCaptureObject(m_device);
+    captureDescriptor->setDestination(MTL::CaptureDestinationGPUTraceDocument);
+    captureDescriptor->setOutputURL(url);
+    captureDescriptor->setCaptureObject(m_device);
 
     NS::Error* error = nullptr;
 
-    success = captureManager->startCapture(pCaptureDescriptor, &error);
+    success = captureManager->startCapture(captureDescriptor, &error);
     if (!success) {
         __builtin_printf("Failed to start capture: \"%s\" for file \"%s\"\n", error->localizedDescription()->utf8String(), m_traceSaveFilePath->utf8String());
         assert(false);
     }
 
-    pURL->release();
-    pCaptureDescriptor->release();
+    url->release();
+    captureDescriptor->release();
 }
 
-void Renderer::generateMandelbrotTexture(MTL::CommandBuffer* pCommandBuffer)
+void Renderer::generateMandelbrotTexture(MTL::CommandBuffer* commandBuffer)
 {
-    assert(pCommandBuffer);
+    assert(commandBuffer);
 
     uint* ptr = reinterpret_cast<uint*>(m_textureAnimationBuffer->contents());
     *ptr = (m_animationIndex++) % 5000;
     m_textureAnimationBuffer->didModifyRange(NS::Range::Make(0, sizeof(uint)));
 
-    MTL::ComputeCommandEncoder* pComputeEncoder = pCommandBuffer->computeCommandEncoder();
+    MTL::ComputeCommandEncoder* computeEncoder = commandBuffer->computeCommandEncoder();
 
-    pComputeEncoder->setComputePipelineState(m_computePipelineState);
-    pComputeEncoder->setTexture(m_texture, 0);
-    pComputeEncoder->setBuffer(m_textureAnimationBuffer, 0, 0);
+    computeEncoder->setComputePipelineState(m_computePipelineState);
+    computeEncoder->setTexture(m_texture, 0);
+    computeEncoder->setBuffer(m_textureAnimationBuffer, 0, 0);
 
     MTL::Size gridSize = MTL::Size(kTextureWidth, kTextureHeight, 1);
 
     NS::UInteger threadGroupSize = m_computePipelineState->maxTotalThreadsPerThreadgroup();
     MTL::Size threadgroupSize(threadGroupSize, 1, 1);
 
-    pComputeEncoder->dispatchThreads(gridSize, threadgroupSize);
+    computeEncoder->dispatchThreads(gridSize, threadgroupSize);
 
-    pComputeEncoder->endEncoding();
+    computeEncoder->endEncoding();
 }
 
 void Renderer::draw(MTK::View* view)

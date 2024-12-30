@@ -648,24 +648,24 @@ void Renderer::buildBuffers()
 
 void Renderer::generateMandelbrotTexture()
 {
-    MTL::CommandBuffer* pCommandBuffer = m_commandQueue->commandBuffer();
-    assert(pCommandBuffer);
+    MTL::CommandBuffer* commandBuffer = m_commandQueue->commandBuffer();
+    assert(commandBuffer);
 
-    MTL::ComputeCommandEncoder* pComputeEncoder = pCommandBuffer->computeCommandEncoder();
+    MTL::ComputeCommandEncoder* computeEncoder = commandBuffer->computeCommandEncoder();
 
-    pComputeEncoder->setComputePipelineState(m_computePipelineState);
-    pComputeEncoder->setTexture(m_texture, 0);
+    computeEncoder->setComputePipelineState(m_computePipelineState);
+    computeEncoder->setTexture(m_texture, 0);
 
     MTL::Size gridSize = MTL::Size(kTextureWidth, kTextureHeight, 1);
 
     NS::UInteger threadGroupSize = m_computePipelineState->maxTotalThreadsPerThreadgroup();
     MTL::Size threadgroupSize(threadGroupSize, 1, 1);
 
-    pComputeEncoder->dispatchThreads(gridSize, threadgroupSize);
+    computeEncoder->dispatchThreads(gridSize, threadgroupSize);
 
-    pComputeEncoder->endEncoding();
+    computeEncoder->endEncoding();
 
-    pCommandBuffer->commit();
+    commandBuffer->commit();
 }
 
 void Renderer::draw(MTK::View* view)
