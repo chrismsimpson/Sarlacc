@@ -28,7 +28,7 @@
 #include <simd/simd.h>
 
 static constexpr size_t kNumInstances = 32;
-static constexpr size_t kMaxFramesInFlight = 3;
+static constexpr size_t MAX_FRAMES_IN_FLIGHT = 3;
 
 #pragma region Declarations {
 
@@ -59,13 +59,13 @@ private:
     MTL::RenderPipelineState* m_renderPipelineState;
     MTL::DepthStencilState* m_depthStencilState;
     MTL::Buffer* m_vertexDataBuffer;
-    MTL::Buffer* m_instanceDataBuffer[kMaxFramesInFlight];
-    MTL::Buffer* m_cameraDataBuffer[kMaxFramesInFlight];
+    MTL::Buffer* m_instanceDataBuffer[MAX_FRAMES_IN_FLIGHT];
+    MTL::Buffer* m_cameraDataBuffer[MAX_FRAMES_IN_FLIGHT];
     MTL::Buffer* m_indexBuffer;
-    float _angle;
-    int _frame;
+    float m_angle;
+    int m_frame;
     dispatch_semaphore_t _semaphore;
-    static const int kMaxFramesInFlight;
+    static const int MAX_FRAMES_IN_FLIGHT;
 };
 
 class MyMTKViewDelegate : public MTK::ViewDelegate {
@@ -314,19 +314,19 @@ simd::float4x4 makeScale(const simd::float3& v)
 #pragma mark - Renderer
 #pragma region Renderer {
 
-const int Renderer::kMaxFramesInFlight = 3;
+const int Renderer::MAX_FRAMES_IN_FLIGHT = 3;
 
 Renderer::Renderer(MTL::Device* device)
     : m_device(device->retain())
-    , _angle(0.f)
-    , _frame(0)
+    , m_angle(0.f)
+    , m_frame(0)
 {
     m_commandQueue = m_device->newCommandQueue();
     buildShaders();
     buildDepthStencilStates();
     buildBuffers();
 
-    _semaphore = dispatch_semaphore_create(Renderer::kMaxFramesInFlight);
+    _semaphore = dispatch_semaphore_create(Renderer::MAX_FRAMES_IN_FLIGHT);
 }
 
 Renderer::~Renderer()
@@ -334,10 +334,10 @@ Renderer::~Renderer()
     m_shaderLibrary->release();
     m_depthStencilState->release();
     m_vertexDataBuffer->release();
-    for (int i = 0; i < kMaxFramesInFlight; ++i) {
+    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
         m_instanceDataBuffer[i]->release();
     }
-    for (int i = 0; i < kMaxFramesInFlight; ++i) {
+    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
         m_cameraDataBuffer[i]->release();
     }
     m_indexBuffer->release();
@@ -501,13 +501,13 @@ void Renderer::buildBuffers()
     m_vertexDataBuffer->didModifyRange(NS::Range::Make(0, m_vertexDataBuffer->length()));
     m_indexBuffer->didModifyRange(NS::Range::Make(0, m_indexBuffer->length()));
 
-    const size_t instanceDataSize = kMaxFramesInFlight * kNumInstances * sizeof(shader_types::InstanceData);
-    for (size_t i = 0; i < kMaxFramesInFlight; ++i) {
+    const size_t instanceDataSize = MAX_FRAMES_IN_FLIGHT * kNumInstances * sizeof(shader_types::InstanceData);
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
         m_instanceDataBuffer[i] = m_device->newBuffer(instanceDataSize, MTL::ResourceStorageModeManaged);
     }
 
-    const size_t cameraDataSize = kMaxFramesInFlight * sizeof(shader_types::CameraData);
-    for (size_t i = 0; i < kMaxFramesInFlight; ++i) {
+    const size_t cameraDataSize = MAX_FRAMES_IN_FLIGHT * sizeof(shader_types::CameraData);
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
         m_cameraDataBuffer[i] = m_device->newBuffer(cameraDataSize, MTL::ResourceStorageModeManaged);
     }
 }
@@ -520,8 +520,8 @@ void Renderer::draw(MTK::View* view)
 
     NS::AutoreleasePool* pPool = NS::AutoreleasePool::alloc()->init();
 
-    _frame = (_frame + 1) % Renderer::kMaxFramesInFlight;
-    MTL::Buffer* pInstanceDataBuffer = m_instanceDataBuffer[_frame];
+    m_frame = (m_frame + 1) % Renderer::MAX_FRAMES_IN_FLIGHT;
+    MTL::Buffer* pInstanceDataBuffer = m_instanceDataBuffer[m_frame];
 
     MTL::CommandBuffer* commandBuffer = m_commandQueue->commandBuffer();
     dispatch_semaphore_wait(_semaphore, DISPATCH_TIME_FOREVER);
@@ -530,7 +530,7 @@ void Renderer::draw(MTK::View* view)
         dispatch_semaphore_signal(pRenderer->_semaphore);
     });
 
-    _angle += 0.01f;
+    m_angle += 0.01f;
 
     const float scl = 0.1f;
     shader_types::InstanceData* pInstanceData = reinterpret_cast<shader_types::InstanceData*>(pInstanceDataBuffer->contents());
@@ -540,19 +540,19 @@ void Renderer::draw(MTK::View* view)
     // Update instance positions:
 
     float4x4 rt = math::makeTranslate(objectPosition);
-    float4x4 rr = math::makeYRotate(-_angle);
+    float4x4 rr = math::makeYRotate(-m_angle);
     float4x4 rtInv = math::makeTranslate({ -objectPosition.x, -objectPosition.y, -objectPosition.z });
     float4x4 fullObjectRot = rt * rr * rtInv;
 
     for (size_t i = 0; i < kNumInstances; ++i) {
         float iDivNumInstances = i / (float)kNumInstances;
         float xoff = (iDivNumInstances * 2.0f - 1.0f) + (1.f / kNumInstances);
-        float yoff = sin((iDivNumInstances + _angle) * 2.0f * M_PI);
+        float yoff = sin((iDivNumInstances + m_angle) * 2.0f * M_PI);
 
         // Use the tiny math library to apply a 3D transformation to the instance.
         float4x4 scale = math::makeScale((float3) { scl, scl, scl });
-        float4x4 zrot = math::makeZRotate(_angle);
-        float4x4 yrot = math::makeYRotate(_angle);
+        float4x4 zrot = math::makeZRotate(m_angle);
+        float4x4 yrot = math::makeYRotate(m_angle);
         float4x4 translate = math::makeTranslate(math::add(objectPosition, { xoff, yoff, 0.f }));
 
         pInstanceData[i].instanceTransform = fullObjectRot * translate * yrot * zrot * scale;
@@ -566,7 +566,7 @@ void Renderer::draw(MTK::View* view)
 
     // Update camera state:
 
-    MTL::Buffer* pCameraDataBuffer = m_cameraDataBuffer[_frame];
+    MTL::Buffer* pCameraDataBuffer = m_cameraDataBuffer[m_frame];
     shader_types::CameraData* pCameraData = reinterpret_cast<shader_types::CameraData*>(pCameraDataBuffer->contents());
     pCameraData->perspectiveTransform = math::makePerspective(45.f * M_PI / 180.f, 1.f, 0.03f, 500.0f);
     pCameraData->worldTransform = math::makeIdentity();
