@@ -526,21 +526,21 @@ void Renderer::buildComputePipeline()
         })";
     NS::Error* error = nullptr;
 
-    MTL::Library* pComputeLibrary = m_device->newLibrary(NS::String::string(kernelSrc, NS::UTF8StringEncoding), nullptr, &error);
-    if (!pComputeLibrary) {
+    MTL::Library* computeLibrary = m_device->newLibrary(NS::String::string(kernelSrc, NS::UTF8StringEncoding), nullptr, &error);
+    if (!computeLibrary) {
         __builtin_printf("%s", error->localizedDescription()->utf8String());
         assert(false);
     }
 
-    MTL::Function* pMandelbrotFn = pComputeLibrary->newFunction(NS::String::string("mandelbrot_set", NS::UTF8StringEncoding));
-    m_computePipelineState = m_device->newComputePipelineState(pMandelbrotFn, &error);
+    MTL::Function* mandelbrotFunction = computeLibrary->newFunction(NS::String::string("mandelbrot_set", NS::UTF8StringEncoding));
+    m_computePipelineState = m_device->newComputePipelineState(mandelbrotFunction, &error);
     if (!m_computePipelineState) {
         __builtin_printf("%s", error->localizedDescription()->utf8String());
         assert(false);
     }
 
-    pMandelbrotFn->release();
-    pComputeLibrary->release();
+    mandelbrotFunction->release();
+    computeLibrary->release();
 }
 
 void Renderer::buildDepthStencilStates()
